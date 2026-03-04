@@ -14,6 +14,67 @@ execute:
 
 ```{ojs}
 Plot = require("@observablehq/plot@0.6")
+```
+
+```{ojs}
+cargosInfo = {
+  const data = {
+    "6985692b0019b011d4a9": { nombre: "Gobernador", prioridad: 10 },
+    "6985692d002caedc8a05": { nombre: "Alcalde", prioridad: 9 },
+    "6985692f000d5fa06665": { nombre: "Vicegobernador", prioridad: 8 },
+    "698569300002b7e2c898": { nombre: "Subgobernador", prioridad: 7 },
+    "6985692f0026fc9818f9": { nombre: "Asambleistas Regionales por Poblacion", prioridad: 6 },
+    "6985692e0017dcaedf70": { nombre: "Asambleistas Regionales por Territorio", prioridad: 5 },
+    "6985693100241f41ca8b": { nombre: "Corregidor", prioridad: 4 }
+  };
+  return data;
+}
+
+territorioInfo = {
+  const data = {
+    "6983986f27930b142391": { nombre: "Departamento de La Paz", prioridad: 10 },
+    "698398675bb38121fa86": { nombre: "Departamento de Cochabamba", prioridad: 10 },
+    "69839869e17caed5adf0": { nombre: "Departamento de Santa Cruz", prioridad: 10 },
+    "6983986da5e5ba7df366": { nombre: "Departamento de Potosi", prioridad: 8 },
+    "6983986484ff3fbbd1ce": { nombre: "Departamento de Beni", prioridad: 8 },
+    "6983986b655f81d387ea": { nombre: "Departamento de Tarija", prioridad: 8 },
+    "698398662dbd3f8849d5": { nombre: "Departamento de Chuquisaca", prioridad: 8 },
+    "69839868858161e0b8a0": { nombre: "Departamento de Pando", prioridad: 8 },
+    "6983986c6c9ac55f6440": { nombre: "Departamento de Oruro", prioridad: 8 },
+    "69839a1ea14be0c0f130": { nombre: "Municipio de La Paz", prioridad: 9 },
+    "698398f5670464b78148": { nombre: "Municipio de El Alto", prioridad: 9 },
+    "6983991d0f5226b8f547": { nombre: "Municipio de Cochabamba", prioridad: 9 },
+    "698399613415da3b0042": { nombre: "Municipio de Santa Cruz de la Sierra", prioridad: 9 },
+    "698398830087d877f5f0": { nombre: "Municipio de Cobija", prioridad: 7 },
+    "698398afe8eb95ee9732": { nombre: "Municipio de Trinidad", prioridad: 7 },
+    "69839992e8227ce2c00c": { nombre: "Municipio de Oruro", prioridad: 7 },
+    "698399a8a3c3fe144248": { nombre: "Municipio de Sucre", prioridad: 7 },
+    "69839a0b3109ff07b9ec": { nombre: "Municipio de Potosí", prioridad: 7 },
+    "698399e96916e0cb08d3": { nombre: "Municipio de Tarija", prioridad: 7 },
+    
+  };
+  return data;
+}
+
+nombreCargo = (cargoId) => {
+  const info = cargosInfo[cargoId]
+  return (info && info.nombre) || cargoId || "(Sin dato)"
+}
+
+prioridadCargo = (cargoId) => {
+  const info = cargosInfo[cargoId]
+  return (info && info.prioridad) || 1
+}
+
+nombreTerritorio = (cargoId) => {
+  const info = territorioInfo[cargoId]
+  return (info && info.nombre) || cargoId || "(Sin dato)"
+}
+
+prioridadTerritorio = (cargoId) => {
+  const info = territorioInfo[cargoId]
+  return (info && info.prioridad) || 1
+}
 
 // Fuente principal
 candidatos = FileAttachment("datos/candidatos.csv").csv()
@@ -49,13 +110,22 @@ totalCampos = campos.length
 // Cálculo por candidato
 candidatosCompletitud = candidatos.map((c) => {
   const llenos = campos.filter((k) => !esVacio(c[k])).length
+  const faltantes = totalCampos - llenos
   const completitud = llenos / totalCampos
   const camposFaltantes = campos.filter((k) => esVacio(c[k]))
+  const cargoNombre = nombreCargo(c.cargo)
+  const territorioNombre = nombreTerritorio(c.territorio)
+  const prioridad_cargo = prioridadCargo(c.cargo)
+  const prioridad_territorio = prioridadTerritorio(c.territorio)
+  const puntajeImportancia = faltantes + prioridad_cargo + prioridad_territorio
   return {
     ...c,
     llenos,
-    faltantes: totalCampos - llenos,
+    faltantes,
     camposFaltantes,
+    cargoNombre,
+    territorioNombre,
+    puntajeImportancia,
     completitud,
     completitudPct: Math.round(completitud * 100)
   }
@@ -83,7 +153,7 @@ completitudCampos = campos.map((campo) => {
 // Promedio por tipo de candidatura
 completitudCandidatura = Array.from(
   candidatosCompletitud.reduce((m, d) => {
-    const k = d.cargo || "(Sin dato)"
+    const k = d.cargoNombre
     if (!m.has(k)) m.set(k, [])
     m.get(k).push(d.completitud)
     return m
@@ -96,11 +166,14 @@ completitudCandidatura = Array.from(
 
 // Ranking con menor completitud
 peorCompletitud = [...candidatosCompletitud]
-  .sort((a, b) => a.completitud - b.completitud)
+  .sort((a, b) => b.puntajeImportancia - a.puntajeImportancia)
   .slice(0, 12)
+
+cargosDisponibles = ["(Todos)", ...new Set(candidatosCompletitud.map((d) => d.cargoNombre))]
+partidosDisponibles = ["(Todos)", ...new Set(candidatosCompletitud.map((d) => d.partido || "(Sin dato)"))]
 ```
 
-# Datos
+# Resumen
 
 ## Row {height=20%}
 
@@ -128,9 +201,7 @@ html`<div style="font-size:2rem;font-weight:700">${sinFoto}</div>
 <div style="color:#6c757d">Campo <strong>foto</strong> vacío</div>`
 ```
 
-## Row {height=50%}
-
-### Column {.tabset}
+## Row {height=80%}
 
 ```{ojs}
 //| output: true
@@ -154,11 +225,9 @@ Plot.plot({
 })
 ```
 
-
 ```{ojs}
 //| output: true
 //| title: Promedio por tipo de candidatura
-
 Plot.plot({
   height: 400,
   marginLeft: 140,
@@ -184,21 +253,51 @@ Plot.plot({
 })
 ```
 
-# Tabla
+# Tabla  
+
+## Row {height=20%}
+
+```{ojs}
+//| output: true
+viewof filtrosTabla = Inputs.form({
+  cargo: Inputs.select(cargosDisponibles, {label: "Cargo", value: "(Todos)"}),
+  partido: Inputs.select(partidosDisponibles, {label: "Partido", value: "(Todos)"}),
+  nombre: Inputs.text({label: "Buscar candidato", placeholder: "Escribe un nombre"})
+})
+```
+
+```{ojs}
+//| output: false
+textoFiltro = (filtrosTabla.nombre || "").trim().toLowerCase()
+
+candidatosFiltrados = candidatosCompletitud.filter((d) => {
+  const matchCargo = filtrosTabla.cargo === "(Todos)" || d.cargoNombre === filtrosTabla.cargo
+  const partido = d.partido || "(Sin dato)"
+  const matchPartido = filtrosTabla.partido === "(Todos)" || partido === filtrosTabla.partido
+  const matchNombre = !textoFiltro || (d.label || "").toLowerCase().includes(textoFiltro)
+  return matchCargo && matchPartido && matchNombre
+})
+```
+
+## Row {height=80%}  
 
 ```{ojs}
 //| output: true
 Inputs.table(
-  candidatosCompletitud.map((d) => ({
+  candidatosFiltrados.map((d) => ({
     label: d.label,
     url: d.item,
+    cargo: d.cargoNombre,
+    territorio: d.territorioNombre,
+    puntosFaltantes: d.faltantes,
+    puntajeImportancia: d.puntajeImportancia,
     completitud: `${d.completitudPct}%`,
     faltantes: d.camposFaltantes.join(", ")
   })),
   {
-    columns: ["label", "url", "completitud", "faltantes"],
-    sort: "completitud",
-    reverse: false,
+    columns: ["label", "url", "cargo", "territorio", "puntosFaltantes", "puntajeImportancia", "completitud", "faltantes"],
+    sort: "puntajeImportancia",
+    reverse: true,
     format: {
       url: (item) => html`<a href="https://graph.sociest.org/entity/${item}" target="_blank">Ver</a>`
     }

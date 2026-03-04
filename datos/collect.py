@@ -100,17 +100,5 @@ print(f"\nTotal candidates collected: {len(all_data)}")
 
 all_data_df = pd.DataFrame(all_data)
 
-
-cargos_dict = {
-  "6985692b0019b011d4a9": "Gobernador",
-  "6985692f0026fc9818f9": "Asambleístas Regionales por Población",
-  "6985692e0017dcaedf70": "Asambleístas Regionales por Territorio",
-  "6985692f000d5fa06665": "Vicegobernador",
-  "698569300002b7e2c898": "Subgobernador",
-  "6985693100241f41ca8b": "Corregidor",
-  "6985692d002caedc8a05": "Alcalde"
-}
-
-all_data_df["cargo"] = all_data_df["cargo"].map(cargos_dict)
-
 all_data_df.to_csv("datos/candidatos.csv",index=False)
+

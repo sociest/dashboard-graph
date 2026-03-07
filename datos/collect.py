@@ -54,13 +54,13 @@ all_data = []
 # Headers que simulan un navegador real para evitar Cloudflare
 headers = {
     "Content-Type": "application/json",
-    "X-Appwrite-Project": project_id,
+#    "X-Appwrite-Project": project_id,
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
     "Accept": "application/json, text/plain, */*",
     "Accept-Language": "en-US,en;q=0.9",
     "Accept-Encoding": "gzip, deflate, br",
-    "Origin": appwrite_url,
-    "Referer": f"{appwrite_url}/",
+#    "Origin": appwrite_url,
+#    "Referer": f"{appwrite_url}/",
     "Cache-Control": "no-cache",    
     "Pragma": "no-cache",
     "DNT": "1",
@@ -70,19 +70,19 @@ headers = {
 }
 
 # Agregar API key si está disponible
-if api_key:
-    headers["X-Appwrite-Key"] = api_key
+#if api_key:
+#    headers["X-Appwrite-Key"] = api_key
 
 # Agregar Cloudflare token si está disponible
-if cloudflare_token:
-    headers["CF-Access-Token"] = cloudflare_token
+#if cloudflare_token:
+#    headers["CF-Access-Token"] = cloudflare_token
 
 
 print("Start Extraction")
-print(f"Appwrite URL: {appwrite_url}")
-print(f"Project ID: {project_id[:20]}...")
-print(f"API Key: {'Configurada' if api_key else 'No configurada'}")
-print(f"Cloudflare Token: {'Configurado' if cloudflare_token else 'No configurado'}")
+#print(f"Appwrite URL: {appwrite_url}")
+#print(f"Project ID: {project_id[:20]}...")
+#print(f"API Key: {'Configurada' if api_key else 'No configurada'}")
+#print(f"Cloudflare Token: {'Configurado' if cloudflare_token else 'No configurado'}")
 
 for i in range(max_iterations):
     query_with_offset = query.replace("{{OFFSET}}", str(offset)).replace(
@@ -111,7 +111,7 @@ for i in range(max_iterations):
                 break
             elif response.status_code == 403:
                 print(
-                    f"403 Forbidden - Posiblemente Cloudflare. Headers: {list(response.headers.keys())[:5]}"
+                    f"403 Forbidden - {list(response.headers.keys())} {response.text}"
                 )
                 if attempt < max_retries - 1:
                     print(f"Esperando 5 segundos antes de reintentar...")

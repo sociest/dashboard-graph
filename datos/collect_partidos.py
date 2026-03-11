@@ -3,7 +3,7 @@ import pandas as pd
 import time
 import os
 
-query = """SELECT ?item ?label ?logo ?sigla ?sede ?presidente ?militantes ?fundador ?fundacion ?ideologia ?descripcion ?colores ?tipo
+query = """SELECT DISTINCT ?item ?label ?logo ?sigla ?sede ?presidente ?militantes ?fundador ?fundacion ?ideologia ?descripcion ?colores ?tipo
 WHERE {
   OPTIONAL { ?item claim:6985e79eafa03f6c8186 ?ret_stmt3 . ?ret_stmt3 value: ?logo . }
   OPTIONAL { ?item claim:69912af042192aa886da ?ret_stmt4 . ?ret_stmt4 value: ?sigla . }
@@ -19,6 +19,7 @@ WHERE {
   ?item claim:69814ee90009513e4f69 ?stmt0 .
   ?stmt0 value: "6985697dce1378ac55e9" .
 }
+GROUP BY ?item
 LIMIT {{LIMIT}}
 OFFSET {{OFFSET}}"""
 

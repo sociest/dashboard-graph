@@ -4,7 +4,7 @@ import time
 import os
 
 query = """
-SELECT ?item ?label ?cobertura ?coberturaLabel ?autor ?autorLabel ?fecha_fin ?fecha_inicio ?margen ?muestra ?resultado ?publicacion ?nivel_confianza ?archivo ?casa_registrada ?ciudadanos_registrados
+SELECT DISTINCT ?item ?label ?cobertura ?coberturaLabel ?autor ?autorLabel ?fecha_fin ?fecha_inicio ?margen ?muestra ?resultado ?publicacion ?nivel_confianza ?archivo ?casa_registrada ?ciudadanos_registrados ?censo_personas16
 WHERE {
   OPTIONAL { ?item claim:698febc2001abeb954c4 ?ret_stmt3 . ?ret_stmt3 value: ?cobertura . }
   OPTIONAL { ?item claim:698ff2fb95a70777d5e8 ?ret_stmt4 . ?ret_stmt4 value: ?autor . }
@@ -23,6 +23,7 @@ WHERE {
   ?item claim:69814ee90009513e4f69 ?stmt0 .
   ?stmt0 value: "698ff11ee732836cda65" .
 }
+GROUP BY ?item
 LIMIT {{LIMIT}}
 OFFSET {{OFFSET}}"""
 

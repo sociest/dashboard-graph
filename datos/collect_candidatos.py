@@ -3,7 +3,7 @@ import pandas as pd
 import time
 import os
 
-query = """SELECT ?item ?label ?ci ?cargo ?militancia ?trayectoria ?estudios ?foto ?youtube ?facebook ?instagram ?tiktok ?twitter ?partido ?territorio
+query = """SELECT DISTINCT ?item ?label ?ci ?cargo ?militancia ?trayectoria ?estudios ?foto ?youtube ?facebook ?instagram ?tiktok ?twitter ?partido ?territorio
 WHERE { 
   ?item claim:69857da6142c6cf1636b ?stmt1 .
   OPTIONAL {
@@ -33,6 +33,7 @@ WHERE {
     ?stmt12 qual:6982cd215f22d1c5d613 ?territorio .
   }
 }
+GROUP BY ?item
 LIMIT {{LIMIT}}
 OFFSET {{OFFSET}}"""
 

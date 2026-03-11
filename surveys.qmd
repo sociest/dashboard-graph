@@ -1,0 +1,253 @@
+---
+title: "Completitud de encuestas"
+format:
+  dashboard:
+    theme:
+      light: cosmo
+      dark: darkly
+    orientation: rows
+    scrolling-rows: auto
+execute:
+  echo: false
+  output: false
+---
+
+```{ojs}
+Plot = require("@observablehq/plot@0.6")
+```
+
+```{ojs}
+// Fuente principal
+encuestas = FileAttachment("datos/encuestas.csv").csv()
+
+// Normalizar vacíos
+esVacio = (v) => {
+  if (v === null || v === undefined) return true
+  const t = String(v).trim().toLowerCase()
+  return t === "" || t === "nan" || t === "null" || t === "none" || t === "s/n"
+}
+
+// Campos evaluados para completitud de encuestas
+campos = [
+  "cobertura",
+  "autor",
+  "fecha_fin",
+  "fecha_inicio",
+  "margen",
+  "muestra",
+  "resultado",
+  "publicacion",
+  "nivel_confianza",
+  "archivo",
+  "casa_registrada",
+  "ciudadanos_registrados",
+  "censo_personas16",
+  "item",
+  "label",
+  "coberturaLabel",
+  "autorLabel"
+]
+
+totalCampos = campos.length
+
+// Cálculo por encuesta
+encuestasCompletitud = encuestas.map((e) => {
+  const llenos = campos.filter((k) => !esVacio(e[k])).length
+  const faltantes = totalCampos - llenos
+  const completitud = llenos / totalCampos
+  const camposFaltantes = campos.filter((k) => esVacio(e[k]))
+  const coberturaNombre = e.coberturaLabel || e.cobertura || "(Sin dato)"
+  const autorNombre = e.autorLabel || e.autor || "(Sin dato)"
+  const puntajeImportancia = faltantes
+  return {
+    ...e,
+    llenos,
+    faltantes,
+    camposFaltantes,
+    coberturaNombre,
+    autorNombre,
+    puntajeImportancia,
+    completitud,
+    completitudPct: Math.round(completitud * 100)
+  }
+})
+
+totalEncuestas = encuestasCompletitud.length
+promedioCompletitud = totalEncuestas
+  ? encuestasCompletitud.reduce((acc, d) => acc + d.completitud, 0) / totalEncuestas
+  : 0
+
+registrosCompletos = encuestasCompletitud.filter((d) => d.completitud === 1).length
+sinArchivo = encuestasCompletitud.filter((d) => esVacio(d.archivo)).length
+
+// Completitud por campo
+completitudCampos = campos.map((campo) => {
+  const llenos = encuestasCompletitud.filter((d) => !esVacio(d[campo])).length
+  return {
+    campo,
+    llenos,
+    total: totalEncuestas,
+    pct: totalEncuestas ? (llenos / totalEncuestas) * 100 : 0
+  }
+})
+
+// Promedio por autor
+completitudAutor = Array.from(
+  encuestasCompletitud.reduce((m, d) => {
+    const k = d.autorNombre
+    if (!m.has(k)) m.set(k, [])
+    m.get(k).push(d.completitud)
+    return m
+  }, new Map()),
+  ([autor, valores]) => ({
+    autor,
+    pct: (valores.reduce((a, b) => a + b, 0) / valores.length) * 100
+  })
+).sort((a, b) => b.pct - a.pct)
+
+// Ranking con menor completitud
+peorCompletitud = [...encuestasCompletitud]
+  .sort((a, b) => b.puntajeImportancia - a.puntajeImportancia)
+  .slice(0, 12)
+
+coberturasDisponibles = ["(Todos)", ...new Set(encuestasCompletitud.map((d) => d.coberturaNombre))]
+autoresDisponibles = ["(Todos)", ...new Set(encuestasCompletitud.map((d) => d.autorNombre))]
+```
+
+# Resumen
+
+## Row {height=20%}
+
+```{ojs}
+//| output: true
+html`<div style="font-size:2rem;font-weight:700">${totalEncuestas}</div>
+<div style="color:#6c757d">Registros evaluados</div>`
+```
+
+```{ojs}
+//| output: true
+html`<div style="font-size:2rem;font-weight:700">${(promedioCompletitud * 100).toFixed(1)}%</div>
+<div style="color:#6c757d">Sobre ${totalCampos} campos</div>`
+```
+
+```{ojs}
+//| output: true
+html`<div style="font-size:2rem;font-weight:700">${registrosCompletos}</div>
+<div style="color:#6c757d">Con 100% de campos llenos</div>`
+```
+
+```{ojs}
+//| output: true
+html`<div style="font-size:2rem;font-weight:700">${sinArchivo}</div>
+<div style="color:#6c757d">Campo <strong>archivo</strong> vacío</div>`
+```
+
+## Row {height=80%}
+
+```{ojs}
+//| output: true
+//| title: Completitud por campo
+Plot.plot({
+  height: 450,
+  marginLeft: 120,
+  x: {label: "Completitud (%)", domain: [0, 100]},
+  y: {label: null},
+  color: {legend: false},
+  marks: [
+    Plot.barX(completitudCampos, {
+      x: "pct",
+      y: "campo",
+      sort: {y: "x", reverse: true},
+      fill: (d) => (d.pct >= 80 ? "#198754" : d.pct >= 50 ? "#fd7e14" : "#dc3545"),
+      tip: true
+    }),
+    Plot.ruleX([0, 100])
+  ]
+})
+```
+
+```{ojs}
+//| output: true
+//| title: Promedio por autor
+Plot.plot({
+  height: 400,
+  marginLeft: 140,
+  x: {label: "Completitud promedio (%)", domain: [0, 100]},
+  y: {label: null},
+  marks: [
+    Plot.barX(completitudAutor, {
+      x: "pct",
+      y: "autor",
+      fill: "#0d6efd",
+      sort: {y: "x", reverse: true},
+      tip: true
+    }),
+    Plot.text(completitudAutor, {
+      x: "pct",
+      y: "autor",
+      text: (d) => `${d.pct.toFixed(1)}%`,
+      dx: 8,
+      textAnchor: "start",
+      fill: "#212529"
+    })
+  ]
+})
+```
+
+# Tabla  
+
+## Row {height=20%}
+
+```{ojs}
+//| output: true
+viewof filtrosTabla = Inputs.form({
+  cobertura: Inputs.select(coberturasDisponibles, {label: "Cobertura", value: "(Todos)"}),
+  autor: Inputs.select(autoresDisponibles, {label: "Autor", value: "(Todos)"}),
+  nombre: Inputs.text({label: "Buscar encuesta", placeholder: "Escribe un nombre"})
+})
+```
+
+```{ojs}
+//| output: false
+textoFiltro = (filtrosTabla.nombre || "").trim().toLowerCase()
+
+encuestasFiltradas = encuestasCompletitud.filter((d) => {
+  const matchCobertura = filtrosTabla.cobertura === "(Todos)" || d.coberturaNombre === filtrosTabla.cobertura
+  const matchAutor = filtrosTabla.autor === "(Todos)" || d.autorNombre === filtrosTabla.autor
+  const matchNombre = !textoFiltro || (d.label || "").toLowerCase().includes(textoFiltro)
+  return matchCobertura && matchAutor && matchNombre
+})
+```
+
+## Row {height=80%}  
+
+```{ojs}
+//| output: true
+Inputs.table(
+  encuestasFiltradas.map((d) => ({
+    label: d.label,
+    cobertura: d.coberturaNombre,
+    autor: d.autorNombre,
+    fechaInicio: d.fecha_inicio,
+    fechaFin: d.fecha_fin,
+    muestra: d.muestra,
+    margen: d.margen,
+    nivelConfianza: d.nivel_confianza,
+    archivo: d.archivo,
+    item: d.item,
+    puntosFaltantes: d.faltantes,
+    puntajeImportancia: d.puntajeImportancia,
+    completitud: `${d.completitudPct}%`,
+    faltantes: d.camposFaltantes.join(", ")
+  })),
+  {
+    columns: ["label", "cobertura", "autor", "fechaInicio", "fechaFin", "muestra", "margen", "nivelConfianza", "archivo", "item", "puntosFaltantes", "puntajeImportancia", "completitud", "faltantes"],
+    sort: "puntajeImportancia",
+    reverse: true,
+    format: {
+      archivo: (archivo) => archivo ? html`<a href="${archivo}" target="_blank">Ver archivo</a>` : "",
+      item: (item) => item ? html`<a href="https://graph.sociest.org/entity/${item}" target="_blank">Ver ficha</a>` : ""
+    }
+  }
+)
+```

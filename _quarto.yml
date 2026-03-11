@@ -2,13 +2,15 @@ project:
   type: website
 
 website:
-  title: "Completitud Datos del Grafo"
+  title: "Completitud Datos Elecciones Subnacionales 2026"
   navbar:
     left:
       - href: index.qmd
-        text: Dashboard
+        text: Candidatos
       - href: partidos.qmd
-        text: Partidos Info
+        text: Partidos
+      - href: surveys.qmd
+        text: Encuestas
 
 format:
   html:

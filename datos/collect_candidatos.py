@@ -91,7 +91,7 @@ collect_query_to_csv(
     format="csv",
     output_path="datos/candidatos.csv",
     endpoint=endpoint,
-    initial_limit=int(os.getenv("PAGE_LIMIT", "100")),
+    initial_limit=int(os.getenv("PAGE_LIMIT", "50")),
     max_retries=int(os.getenv("MAX_RETRIES", "3")),
     request_timeout=int(os.getenv("REQUEST_TIMEOUT", "900")),
     retry_delay=int(os.getenv("RETRY_DELAY", "5")),
